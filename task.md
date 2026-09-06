@@ -1,0 +1,31 @@
+# Peak Alpha PMS — Task Progress
+
+- [x] Task 1: Foundation, DB Schema, Universe & Price Ingestion
+  - [x] Create `config/settings.py` with hardcoded constants (`BSE_500_TICKER = "BSE-500.BO"`, `MIN_HISTORY_TRADING_DAYS = 252`, `EPSILON = 1e-6`, `FINANCIAL_SECTOR_KEYWORDS`)
+  - [x] Create `src/db/database.py` and `src/db/schema.py` with SQLite DDL (8 tables, `outperforms_sector` as `BOOLEAN DEFAULT NULL`)
+  - [x] Create `src/utils/logger.py` and `src/utils/helpers.py` (ticker `.NS` formatting, float equality, date math)
+  - [x] Create `src/ingestion/universe.py` (Download Nifty Total Market CSV, parse Symbol, Name, Industry, ISIN, tag financial sector)
+  - [x] Create `src/ingestion/price_fetcher.py` (`yfinance` max price download for universe tickers + `BSE-500.BO` benchmark, validate index magnitude ~30k-40k range, update `listing_date` proxy)
+  - [x] Verify DB storage & price history on 3 anchor stocks (`RELIANCE`, `TCS`, `HDFCBANK`)
+- [x] Task 2: Filter 1 (ATH Price) & Filter 3 Stage A (52w Relative Outperformance) Engine
+  - [x] Create `src/filters/base.py` (Base abstract filter class & FilterResult container)
+  - [x] Create `src/filters/ath_price.py` (Filter 1: Two-Tier ATH Price detector with Primary >= 756 days, Emerging 252-755 days, 1e-6 float epsilon & Yahoo Finance 1996 floor doc)
+  - [x] Create `src/filters/relative_strength.py` (Filter 3 Stage A: 52-week stock vs BSE 500 return calculator)
+  - [x] Unit tests & verification for Filter 1 and Filter 3 Stage A on test stocks (`tests/test_filters.py`)
+- [x] Task 3: Filter 2 (ATH TTM Profit) Ingestion & Manual Review Funnel
+  - [x] Integrate ScanX API (`src/ingestion/scanx_fundamentals.py`) with batch multi-ISIN requests & 46+ quarter history.
+  - [x] Store extra metrics in SQLite: `bse_code`, `market_cap_category`, `sub_sector`, `dividend_yield`, `face_value`, `market_cap`, `pe_ratio`, `pb_ratio`, `book_value`, `roce`, `roe`, `promoter_holding`, `fii_holding`, `dii_holding`.
+  - [x] Secure token in `.env` (`SCANX_AUTH_TOKEN` warning & graceful manual review routing).
+  - [x] Create `src/filters/ath_profit.py` (Filter 2: TTM PAT calculation, ATH PAT check, scoped continuity & 2-signal heuristic fallback).
+  - [x] Create `src/core/manual_review.py` (Screener.in watchlist export generator & review feedback logger).
+  - [x] Document modular provider & fallback architecture (`docs/FUNDAMENTALS_PROVIDER_GUIDE.md`).
+  - [x] Unit tests & verification for Filter 2 and ScanX ingestion (`tests/test_fundamentals.py`).
+- [x] Task 4: Two-Clock Scheduling Architecture & Runners
+  - [x] Implement price runner script for calendar clock (`src/runners/price_pipeline.py`)
+  - [x] Implement fundamental runner script for event clock (`src/runners/fundamentals_pipeline.py`)
+  - [x] Build strategy orchestrator engine (`src/core/screener.py`) and CLI interface (`cli.py`)
+  - [x] Unit tests for runner execution (`tests/test_runners.py`)
+- [x] Task 5: Combined Output & Final Reporting
+  - [x] Full screening output CSV generator (`data/exports/primary_qualifying_stocks.csv` and `data/exports/emerging_candidates.csv`)
+  - [x] Screener.in manual review watchlist exporter (`data/exports/screener_manual_review_watchlist.csv`)
+  - [x] End-to-end pipeline verification and final execution reporting

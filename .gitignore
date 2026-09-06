@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Local Configuration & Environment Variables
+.env
+
+# Local Database Files & Artifacts
+data/*.db
+*.db
+sqliteBrowser
+view_db.sqbpro
+
+# Pytest & Coverage
+.pytest_cache/
+.coverage
+
+# Temporary CSV Data Exports
+*.csv
+!config/*.csv
