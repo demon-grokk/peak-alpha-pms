@@ -32,24 +32,75 @@
      - Computes 52-week (252 trading day) percentage return for stock vs **BSE 500 benchmark** (`BSE-500.BO`).
      - Schema: `screen_results.outperforms_sector` is created as `BOOLEAN DEFAULT NULL` to preserve multi-stage screening semantics.
 
-6. **Layer 3 Allocation & Stop-Loss Engine**
+5. **Layer 3 Allocation & Stop-Loss Engine**
    - **2-Tier Stop Loss Floor**: Derives candidate stop loss via $\text{SL}_{\text{cand}} = \min(S_{\text{raw}}, S_{\text{atr}})$, where $S_{\text{atr}} = \text{Entry} - (2.0 \times \text{ATR}_{14, 60\text{d avg}})$ and $S_{\text{raw}} = \text{Pivot Low}_{\text{zigzag}} - (0.25 \times \text{ATR}_{14, \text{current}})$.
    - **Subsequent Bar Pivot Confirmation**: ZigZag state machine confirms pivot lows strictly on subsequent price action (rally $\ge 1.0 \times \text{ATR}_{14}$).
    - **Position Sizing & Risk Gating**: Allocates integer shares based on 1.2% Total Risk Target (`TRT_PCT`), capped at 15.0% maximum allocation (`MAX_ALLOC_PCT`). Hard risk gate rejects setups with trade risk $R_{\%} > 8.0\%$.
+   - **Corporate Demerger & Anomaly Quarantine**: Filters out stocks undergoing structural breaks or unresolved price anomalies, and supports custom post-demerger ATH baselines via `ath_baseline_start_date`.
    - **Immutable Audit Persistence**: Stores point-in-time input snapshots, risk metrics, and position allocations in `entry_evaluations` table with audit indexing on `selection_reason` (`PASSES_ALL_FILTERS` vs `MANUAL_EXPLORATORY`).
 
 ---
 
-## Quick-Start Setup
+## Cross-Platform & Zero-Config Database Architecture
 
-### 1. Configure Environment Variables
-Create a `.env` file in the project root directory:
+Peak Alpha PMS is designed to run seamlessly across **macOS, Linux, and Windows** with zero external database dependencies:
 
+- **Built-in SQLite Storage**: Backed by Python's standard `sqlite3` library. No need to install, configure, or run background database servers like PostgreSQL or MySQL.
+- **Cross-Platform Path Handling**: File paths and directory structures are resolved dynamically using Python's `pathlib.Path`, eliminating OS-specific path separator issues (`\` vs `/`).
+- **Self-Initializing Storage**: The database directory (`data/`), log directory (`data/logs/`), export directory (`data/exports/`), and SQLite schema (`data/pms.db`) are automatically provisioned on the first run of any CLI command or test.
+
+---
+
+## Installation & Setup
+
+### Prerequisites
+- **Python 3.10+** (macOS, Linux, or Windows)
+- **Git**
+
+### 1. Clone the Repository
 ```bash
-cp .env.example .env
+git clone git@github.com:demon-grokk/peak-alpha-pms.git
+cd peak-alpha-pms
 ```
 
-Edit `.env` and insert your active ScanX authorization token:
+### 2. Create and Activate Virtual Environment
+
+- **macOS / Linux:**
+  ```bash
+  python3 -m venv venv
+  source venv/bin/activate
+  ```
+
+- **Windows (Command Prompt):**
+  ```cmd
+  python -m venv venv
+  venv\Scripts\activate.bat
+  ```
+
+- **Windows (PowerShell):**
+  ```powershell
+  python -m venv venv
+  .\venv\Scripts\Activate.ps1
+  ```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure Environment Variables
+Copy the example environment template:
+
+- **macOS / Linux:**
+  ```bash
+  cp .env.example .env
+  ```
+- **Windows (Command Prompt / PowerShell):**
+  ```cmd
+  copy .env.example .env
+  ```
+
+Edit `.env` and set your ScanX authorization token:
 ```env
 SCANX_AUTH_TOKEN="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9..."
 ```
@@ -58,60 +109,76 @@ SCANX_AUTH_TOKEN="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9..."
 
 ## How to Run End-to-End Scan & Allocation
 
-Run the discovery & allocation engine in simple steps:
+Once your virtual environment is activated (`(venv)` appears in your prompt), run the CLI commands below:
 
-### Step 1: Ingest Universe Metadata (~752 Stocks)
-Download the latest official Nifty Total Market constituents from NSE and populate the SQLite database:
+### Step 1: Initialize Database & Ingest Universe (~752 Stocks)
+Downloads official Nifty Total Market constituents from NSE and populates the SQLite database (the database file `data/pms.db` is auto-initialized):
 
 ```bash
-./venv/bin/python cli.py ingest-universe
+python cli.py ingest-universe
 ```
+*(Optional: You can also explicitly initialize or verify the schema anytime using `python cli.py init-db`)*
 
 ---
 
 ### Step 2: Run End-to-End Discovery Engine
-Run the full price and fundamentals discovery pipelines across all 752 stocks:
+Runs price fetching, Filters 1 & 3 Stage A, followed by ScanX fundamentals and Filter 2:
 
 ```bash
-./venv/bin/python cli.py run-all
+python cli.py run-all
 ```
 
 ---
 
 ### Step 3: Run Layer 3 Allocation & Stop-Loss Engine
-Evaluate portfolio allocation and stop-loss derivation for screening candidates or explicit stocks:
+Evaluates portfolio position sizing, 2-tier stop loss floor, and risk gating for passing candidates:
 
 ```bash
 # Evaluate screening candidates from latest run date
-./venv/bin/python cli.py evaluate-allocation --capital 1000000 --cash 1000000
+python cli.py evaluate-allocation --capital 1000000 --cash 1000000
 
-# Evaluate exploratory anchor stocks manually
-./venv/bin/python cli.py evaluate-allocation --symbols RELIANCE TCS --capital 1000000 --cash 1000000
+# Or evaluate specific anchor stocks manually (Manual Exploratory mode)
+python cli.py evaluate-allocation --symbols RELIANCE TCS --capital 1000000 --cash 1000000
 ```
 
 ---
 
-## Execution Command Options
+## Complete CLI Command Reference
+
+All commands run portably across macOS, Linux, and Windows:
 
 ```bash
+# Initialize or verify SQLite database schema
+python cli.py init-db
+
+# Ingest/update Nifty Total Market universe
+python cli.py ingest-universe
+
 # Run Calendar Price Pipeline only (Filters 1 & 3 Stage A)
-./venv/bin/python cli.py run-price
+python cli.py run-price
 
 # Run Event Fundamentals Pipeline only (Filter 2)
-./venv/bin/python cli.py run-fundamentals
+python cli.py run-fundamentals
 
 # Run full screener using cached data (Skip external network fetches)
-./venv/bin/python cli.py run-all --no-fetch
+python cli.py run-all --no-fetch
 
 # Run screener for specific symbols
-./venv/bin/python cli.py run-all --symbols RELIANCE TCS HDFCBANK
+python cli.py run-all --symbols RELIANCE TCS HDFCBANK
+
+# Reconcile full price history against Yahoo Finance to catch stock splits / adjustments
+python cli.py reconcile-full-history
 
 # Evaluate Layer 3 position allocation & stop-loss gating
-./venv/bin/python cli.py evaluate-allocation --capital 1000000 --cash 1000000
+python cli.py evaluate-allocation --capital 1000000 --cash 1000000
 
 # Export pending manual reviews to Screener.in watchlist CSV
-./venv/bin/python cli.py export-reviews
+python cli.py export-reviews
 ```
+
+*Tip for direct execution without activating venv:*
+- **macOS / Linux**: `./venv/bin/python cli.py <command>`
+- **Windows**: `.\venv\Scripts\python.exe cli.py <command>`
 
 ---
 
@@ -143,11 +210,12 @@ To handle stock splits, bonus issues, and retroactive price adjustments from Yah
 
 ## Running Unit Tests
 
-Run the complete test suite to verify system integrity:
+Run the full pytest suite to verify system and algorithmic integrity:
 
 ```bash
-./venv/bin/pytest tests/ -v
+pytest tests/ -v
 ```
 
-*Output*: All **32 unit tests** pass in ~2.9s.
+*(Or direct execution: `./venv/bin/pytest tests/ -v` on macOS/Linux, `.\venv\Scripts\pytest.exe tests/ -v` on Windows)*
 
+*Test Suite Output*: All **35 unit and integration tests** pass cleanly.
