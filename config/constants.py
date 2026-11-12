@@ -28,7 +28,7 @@ NIFTY_TOTAL_MARKET_CSV_URL = (
     "https://nsearchives.nseindia.com/content/indices/ind_niftytotalmarket_list.csv"
 )
 BSE_500_TICKER = "BSE-500.BO"
-SCANX_API_URL = "https://scanx.dhan.co/scanx/fundamental"
+SCANX_API_URL = "https://open-web-scanx.dhan.co/scanx/fundamental"
 SCANX_CACHE_MAX_AGE_DAYS = 60
 
 # Strategy & Quantitative Filter Thresholds

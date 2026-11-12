@@ -88,9 +88,10 @@ cd peak-alpha-pms
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment Variables
-Copy the example environment template:
+### 4. Configure Environment Variables (Optional)
+The system now defaults to Dhan's public **open-web ScanX endpoint**, requiring **zero authentication or tokens**!
 
+If you still wish to provide a personal ScanX token:
 - **macOS / Linux:**
   ```bash
   cp .env.example .env
@@ -99,11 +100,8 @@ Copy the example environment template:
   ```cmd
   copy .env.example .env
   ```
+*(Optional: You can leave `SCANX_AUTH_TOKEN=""` in `.env`, and all fundamental queries will continue to work seamlessly).*
 
-Edit `.env` and set your ScanX authorization token:
-```env
-SCANX_AUTH_TOKEN="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9..."
-```
 
 ---
 

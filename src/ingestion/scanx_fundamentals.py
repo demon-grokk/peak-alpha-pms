@@ -94,7 +94,7 @@ def fetch_and_store_scanx_fundamentals(symbols: Optional[List[str]] = None, batc
     Checks cache before hitting API. Batches ISINs into HTTP POST calls.
     """
     if not SCANX_AUTH_TOKEN:
-        logger.error("[CRITICAL WARNING] SCANX_AUTH_TOKEN is missing or empty in .env file! Please update .env.")
+        logger.info("SCANX_AUTH_TOKEN not provided; utilizing open-web public endpoint.")
 
     # Query ISIN mapping from stocks table
     with db_manager.get_connection() as conn:
@@ -130,11 +130,12 @@ def fetch_and_store_scanx_fundamentals(symbols: Optional[List[str]] = None, batc
 
     headers = {
         "accept": "application/json, text/plain, */*",
-        "auth": SCANX_AUTH_TOKEN,
         "content-type": "application/json",
         "origin": "https://scanx.trade",
-        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+        "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36"
     }
+    if SCANX_AUTH_TOKEN:
+        headers["auth"] = SCANX_AUTH_TOKEN
 
     upsert_q_sql = """
     INSERT INTO fundamentals_quarterly (symbol, quarter_end, reported_pat, exceptional_items, pat_normalized, revenue, ebitda, last_result_date)
